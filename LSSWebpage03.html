@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Little Sister Shotgun</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        body {
+            font-family: 'Arial Black', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 20000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease-out, visibility 1s;
+        }
+
+        #splash-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .splash-content {
+            text-align: center;
+            animation: pulse-red 2s infinite;
+        }
+
+        .splash-logo {
+            width: 300px;
+            margin-bottom: 30px;
+            filter: drop-shadow(0 0 10px #ff0000);
+        }
+
+        .enter-btn {
+            background: transparent;
+            border: 2px solid #ff0000;
+            color: #ff0000;
+            padding: 15px 40px;
+            font-family: 'Arial Black', sans-serif;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            cursor: none;
+            transition: all 0.3s;
+        }
+
+        .enter-btn:hover {
+            background: #ff0000;
+            color: #000;
+            box-shadow: 0 0 30px #ff0000;
+        }
+
+        @keyframes pulse-red {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.05); filter: brightness(1.5); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        /* Custom Crosshair Cursor */
+        #cursor {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 30000;
+            transition: transform 0.05s ease-out;
+            background-image: url('https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/crosshair2.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        #cursor.active {
+            transform: scale(1.5);
+        }
+
+        /* Muzzle Flash */
+        .muzzle-flash {
+            position: fixed;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,200,50,1) 0%, rgba(255,100,0,0.8) 40%, transparent 70%);
+            pointer-events: none;
+            z-index: 9999;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            display: none;
+        }
+
+        /* Bullet Hole */
+        .bullet-hole {
+            position: absolute;
+            width: 41px;
+            height: 40px;
+            background-image: url('https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/LSSBulletHoles2.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 1;
+            transition: opacity 1s ease-out;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-image: url('https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/LSSMetalNav.png');
+            padding: 20px 50px;
+            z-index: 1000;
+            border-bottom: 3px solid #ff0000;
+            backdrop-filter: blur(2px);
+            perspective: 1000px;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: color 0.3s;
+            display: inline-block;
+            position: relative;
+            transform-origin: center center;
+            backface-visibility: hidden;
+        }
+
+        nav a:hover {
+            color: #ffcc00;
+            text-shadow: 0 0 10px #ffcc00;
+        }
+
+        /* Slowed Spinning Animation - 2.5s duration for 720 degrees */
+        .spin {
+            animation: spin-double 2.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes spin-double {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            15% {
+                transform: rotate(180deg) scale(1.6);
+            }
+            100% {
+                transform: rotate(720deg) scale(1);
+            }
+        }
+
+        /* Shotgun Impact Animation (Shake) */
+        .impact {
+            animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 2px, 0); }
+            20%, 80% { transform: translate3d(4px, -4px, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 6px, 0); }
+            40%, 60% { transform: translate3d(6px, -6px, 0); }
+        }
+
+        /* Sections */
+        section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 20px;
+            position: relative;
+            background: #0a0a0a;
+        }
+
+        /* CRT/Scanline Overlay */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.03));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Hero Section & TV Effect */
+        #hero {
+            background: radial-gradient(circle at center, #222 0%, #000 100%);
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .tv-container {
+            position: relative;
+            max-width: 850px;
+            width: 90%;
+            margin: 0 auto 20px auto;
+            border: 20px solid #1a1a1a;
+            border-radius: 40px;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(255,0,0,0.2), inset 0 0 100px #000;
+            filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.8));
+        }
+
+        /* Scanning Interference Line */
+        .tv-container::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .scanning-line {
+            width: 100%;
+            height: 100px;
+            z-index: 3;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.2;
+            position: absolute;
+            bottom: 100%;
+            animation: scan .1s linear infinite;
+        }
+
+        .scanning-line02 {
+            width: 100%;
+            height: 100px;
+            z-index: 3;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.2;
+            position: absolute;
+            bottom: 100%;
+            animation: scan 5s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        #hero-logo {
+            width: 100%;
+            height: auto;
+            display: block;
+            animation: flicker 4s infinite alternate;
+            pointer-events: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes flicker {
+            0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% { opacity: 1; filter: brightness(1); }
+            20%, 21.999%, 63%, 63.999%, 65%, 69.999% { opacity: 0.7; filter: brightness(1.2) contrast(1.5); }
+        }
+
+        #hero p {
+            font-size: 24px;
+            color: #ffcc00;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        /* Bio Section */
+        #bio {
+            flex-direction: column;
+            gap: 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .bio-header h2 {
+            font-size: clamp(40px, 8vw, 64px);
+            color: #ff0000;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .member-list {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            width: 100%;
+        }
+
+        .member-row {
+            display: flex;
+            align-items: flex-start;
+            background: rgba(20, 20, 20, 0.8);
+            border: 2px solid #333;
+            border-left: 8px solid #ff0000;
+            padding: 30px;
+            gap: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .member-image {
+            flex-shrink: 0;
+            width: 200px;
+            height: 250px;
+            background: #111;
+            border: 1px solid #444;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .member-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(1.2) brightness(0.8);
+            transition: filter 0.5s;
+        }
+
+        .member-row:hover .member-image img {
+            filter: grayscale(0%) contrast(1.1) brightness(1);
+        }
+
+        .member-info h3 {
+            color: #ffcc00;
+            font-size: 36px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .member-info .role {
+            color: #ff0000;
+            font-size: 16px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            display: block;
+            font-weight: bold;
+        }
+
+        .member-info p {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #ccc;
+            font-family: 'Arial', sans-serif;
+            max-width: 600px;
+        }
+
+        /* Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 1;
+            border: 2px solid #333;
+            overflow: hidden;
+            background: #111;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+            transition: filter 0.5s;
+        }
+
+        .gallery-item:hover img {
+            filter: grayscale(0%) contrast(1);
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .social-icon {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #ff0000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff0000;
+            text-decoration: none;
+            font-size: 24px;
+            transition: 0.3s;
+        }
+
+        .social-icon:hover {
+            background: #ff0000;
+            color: #000;
+            box-shadow: 0 0 20px #ff0000;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="splash-screen">
+        <div class="splash-content">
+            <img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/album_art01.png" class="splash-logo" alt="LSS Logo">
+            <br>
+            <button class="enter-btn shootable" id="enter-site">Lock & Load</button>
+        </div>
+    </div>
+
+    <div class="overlay"></div>
+    <div id="cursor"></div>
+    <div id="flash" class="muzzle-flash"></div>
+
+    <nav id="main-nav">
+        <ul>
+            <li><a href="#hero" class="shootable">Home</a></li>
+            <li><a href="#bio" class="shootable">Bio</a></li>
+            <li><a href="#photos" class="shootable">Photos</a></li>
+            <li><a href="#music" class="shootable">Music</a></li>
+            <li><a href="#socials" class="shootable">Connect</a></li>
+        </ul>
+    </nav>
+
+    <section id="hero">
+        <div class="tv-container">
+            <div class="scanning-line"></div>
+            <div class="scanning-line02"></div>
+            <img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/album_art01.png" id="hero-logo" alt="Little Sister Shotgun Logo">
+        </div>
+        <p>Lock and Load</p>
+    </section>
+
+    <section id="music">
+        <div style="width: 100%; max-width: 800px;">
+            <h2 style="color:#ff0000; text-align:center; margin-bottom: 20px;">LISTEN NOW</h2>
+            <iframe style="border-radius:12px" src="https://open.spotify.com/embed/artist/60YXCNaW1Iq919UjFMv659?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
+    </section>
+
+    <section id="bio">
+        <div class="bio-header">
+            <h2>The Arsenal</h2>
+            <p style="color: #ffcc00; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 60px; text-align: center;">Four souls. One loud-ass mission.</p>
+        </div>
+
+        <div class="member-list">
+            <div class="member-row">
+                <div class="member-image">
+                    <img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/Lilly_hs_cropWeb.png" alt="Lily Babylon">
+                </div>
+                <div class="member-info">
+                    <h3>Lily Babylon</h3>
+                    <span class="role">Vocals & Chaos</span>
+                    <p>A voice that can peel paint off the walls and charm the devil in the same breath. Born in 1687, Lily was the secret child of the eccentric Baron Hans Hermann von Katte of Prussia. Lily realized early on that the courtly minuet was far too quiet for her tastes. Having spent over three centuries drifting through European history—surviving the Enlightenment, the Industrial Revolution, and several poorly timed duels—she has turned to rock and roll as the only cure for the crushing ennui of immortality. As the band’s frontwoman, she treats the stage like a conquered territory, wielding a vocal range refined by centuries of operatic training and a stage presence forged in the fires of the Old World. For Lily, the screams of a stadium crowd are the only thing loud enough to drown out the ticking of the clock she has outrun for 300 years; she isn't just singing for the fans—she’s singing because, after three lifetimes, she finally found something that makes her feel awake.</p>
+                </div>
+            </div>
+            <div class="member-row">
+                <div class="member-image">
+                    <img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/Drake_hs_cropWeb.png" alt="Dirk Daringer">
+                </div>
+                <div class="member-info">
+                    <h3>Dirk Daringer</h3>
+                    <span class="role">Lead Guitar & Vocals</span>
+                    <p>Weaponizing six strings flawlessly. Once the prodigy of the Hohner-Konservatorium in Trossingen, Dirk’s life was forever altered during his senior recital by the "Great Squeezebox Catastrophe of '08"—a horrific collision of a runaway accordion and a pressurized tuba that left the concert hall in ruins and Dirk emotionally shattered. Desperate to scrub the memory of oom-pah beats and lederhosen from his soul, he traded his heritage for a distorted Gibson and a wall of amplifiers. Dirk now plays with a frantic, jagged intensity, using high-gain feedback to drown out the phantom echoes of polka that still haunt his dreams. He refuses to play in 2/4 time and reportedly breaks out in hives at the sight of a bratwurst, channeling his lingering "Accordion PTSD" into the most aggressive, anti-folk guitar solos in modern rock.</p>
+                </div>
+            </div>
+            <div class="member-row">
+                <div class="member-image">
+                    <img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/Greg_hs2_cropWeb.png" alt="Greg Folly">
+                </div>
+                <div class="member-info">
+                    <h3>Greg Folly</h3>
+                    <span class="role">Bass Guitar</span>
+                    <p>A quintessential Canadian lad from the frozen suburbs, Greg’s life was a peaceful blur of Tim Hortons runs and professional snow-shoveling until the band’s original bassist mysteriously vanished into the jungles of Thailand. Discovered via a viral YouTube video where he played slap-bass while wearing a parka, Greg was whisked away to an audition that he aced before he could even ask where they were flying him. Now, he provides the steady, grounded low-end that keeps the band from drifting into total madness. While he occasionally stares longingly at the horizon, reminiscing about the simple, honest labor of clearing a driveway in a blizzard, he’s embraced the chaos of the road. If given the choice, he wouldn’t trade the screaming fans and high-voltage stage for all the road salt in Ontario—though he still keeps a collapsible shovel in the back of the tour bus, just in case.</p>
+                </div>
+            </div>
+            <div class="member-row">
+                <div class="member-image">
+                    <img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/Phil_hs_cropWeb.png" alt="Cinder">
+                </div>
+                <div class="member-info">
+                    <h3>Singe</h3>
+                    <span class="role">Drums & Percussion</span>
+                    <p>A human explosion behind the kit. The man known only as Singe didn’t choose his name; he earned it during a brief, misguided stint as a human cannonball for a failing traveling circus. After a mechanical malfunction sent him hurtling through a pyrotechnic display and directly into a stack of orchestral percussion, he realized that "exploding" was his true rhythmic calling. He plays with a scorched-earth intensity, characterized by a style so friction-heavy that his drumsticks have been known to spontaneously combust mid-solo. Having survived more high-velocity impacts than a crash-test dummy, Singe views the drums as a controlled demolition, providing a percussive blast-radius that keeps the rest of the band on their toes. He rarely speaks, preferring to let the smell of ozone and the charred remains of his drum skins tell his story.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="bio-header">
+        <h2>Chaos Status</h2>
+        <p style="color: #ffcc00; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 60px; text-align: center;">Sanity Monitor</p>
+    </div>
+
+    <div class="status-dashboard shootable" id="lss-dashboard" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 60px; padding: 40px; background: #000; border: 2px solid #ff0000; margin: 50px auto; font-family: 'Courier New', Courier, monospace; position: relative; overflow: hidden; max-width: 1400px;">
+        <div class="status-card" id="stat-lily" style="padding: 15px; border-left: 4px solid #ffcc00;">
+            <h4 style="color: #ffcc00; margin-bottom: 10px;">LILY</h4>
+            <p style="font-size: 14px; color: #00ff00;">LIFESPAN: IMMORTAL</p>
+            <p style="font-size: 14px; color: #fff;">ENNUI: <span class="label" style="color: #ff0000;">LOADING...</span></p>
+            <div style="width: 100%; background: #333; height: 5px; margin-top: 5px;"><div class="bar" style="width: 0%; background: #ff0000; height: 100%; transition: width 0.5s ease;"></div></div>
+        </div>
+
+        <div class="status-card" id="stat-dirk" style="padding: 15px; border-left: 4px solid #ffcc00;">
+            <h4 style="color: #ffcc00; margin-bottom: 10px;">DIRK</h4>
+            <p style="font-size: 14px; color: #00ff00;">POLKA_FILTER: ACTIVE</p>
+            <p style="font-size: 14px; color: #fff;">TRAUMA: <span class="label" style="color: #ff0000;">LOADING...</span></p>
+            <div style="width: 100%; background: #333; height: 5px; margin-top: 5px;"><div class="bar" style="width: 0%; background: #00ff00; height: 100%; transition: width 0.5s ease;"></div></div>
+        </div>
+
+        <div class="status-card" id="stat-greg" style="padding: 15px; border-left: 4px solid #ffcc00;">
+            <h4 style="color: #ffcc00; margin-bottom: 10px;">GREG</h4>
+            <p style="font-size: 14px; color: #00ff00;">LANGUAGE: CANUCK</p>
+            <p style="font-size: 14px; color: #fff;">TEMP: <span class="label" style="color: #00d9ff;">LOADING...</span></p>
+            <div style="width: 100%; background: #333; height: 5px; margin-top: 5px;"><div class="bar" style="width: 0%; background: #00d9ff; height: 100%; transition: width 0.5s ease;"></div></div>
+        </div>
+
+        <div class="status-card" id="stat-singe" style="padding: 15px; border-left: 4px solid #ffcc00;">
+            <h4 style="color: #ffcc00; margin-bottom: 10px;">SINGE</h4>
+            <p style="font-size: 14px; color: #00ff00;">STATE: CANNONBALL</p>
+            <p style="font-size: 14px; color: #fff;">HEAT: <span class="label" style="color: #ff6600;">LOADING...</span></p>
+            <div style="width: 100%; background: #333; height: 5px; margin-top: 5px;"><div class="bar" style="width: 0%; background: #ff6600; height: 100%; transition: width 0.5s ease;"></div></div>
+        </div>
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(transparent 50%, rgba(255,0,0,0.05) 50%); background-size: 100% 4px; pointer-events: none;"></div>
+    </div>
+
+    <section id="photos">
+        <div class="gallery-grid">
+            <div class="gallery-item"><img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/album_art01.png" alt="Live"></div>
+            <div class="gallery-item"><img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/dirtRoad2.png" alt="Live"></div>
+            <div class="gallery-item"><img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/Promo_with_bus.png" alt="Live"></div>
+            <div class="gallery-item"><img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/garage2.jpg" alt="Live"></div>
+            <div class="gallery-item"><img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/album_art02.png" alt="Live"></div>
+            <div class="gallery-item"><img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/Concert02.png" alt="Live"></div>
+            <div class="gallery-item"><img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/Concert03.png" alt="Live"></div>
+            <div class="gallery-item"><img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/Concert01.png" alt="Live"></div>
+            <div class="gallery-item"><img src="https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/Lily_Dirk_onstage.png" alt="Live"></div>
+        </div>
+    </section>
+
+    <section id="socials">
+        <div class="social-icons">
+            <a href="#" class="social-icon">IG</a>
+            <a href="#" class="social-icon">FB</a>
+            <a href="#" class="social-icon">X</a>
+            <a href="#" class="social-icon">YT</a>
+            <a href="#" class="social-icon">TK</a>
+        </div>
+    </section>
+
+    <script>
+        const cursor = document.getElementById('cursor');
+        const flash = document.getElementById('flash');
+        const heroLogo = document.getElementById('hero-logo');
+        const splashScreen = document.getElementById('splash-screen');
+        const enterBtn = document.getElementById('enter-site');
+        const MAX_HOLES = 4;
+        let bulletHoles = [];
+        let clickCount = 0;
+
+        // --- Web Audio API Setup ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let ambientBuzzSource = null;
+        let ambientGain = null;
+        const ambientBuzzURL = 'https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/electric_buzz_ambient.mp3';
+
+        // Sound Assets (excluding ambient buzz)
+        const shotgunAudio = new Audio('https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/080902_shotgun-39753.mp3');
+        const reloadAudio = new Audio('https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/shotgunReload.mp3');
+
+        // Staccato Buzz Variations
+        const staccatoBuzzes = [
+            new Audio('https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/electric_buzz_staccato01.mp3'),
+            new Audio('https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/electric_buzz_staccato02.mp3'),
+            new Audio('https://raw.githubusercontent.com/InfernalCoder/LSSWebsiteAssets/main/electric_buzz_staccato03.mp3')
+        ];
+
+        shotgunAudio.preload = 'auto';
+        reloadAudio.preload = 'auto';
+        staccatoBuzzes.forEach(s => { s.preload = 'auto'; s.volume = 0.2; });
+
+        shotgunAudio.volume = 0.3;
+        reloadAudio.volume = 0.3;
+
+        // Interaction state for Autoplay policies
+        let userInteracted = false;
+
+        // --- Gapless Loop Function ---
+        async function createGaplessLoop(audioContext, url, volume) {
+            try {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.loop = true;
+
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = volume;
+
+                source.connect(gainNode).connect(audioContext.destination);
+                return { source, gainNode };
+            } catch (e) {
+                console.error("Failed to load or decode audio file:", e);
+                return null;
+            }
+        }
+
+        // Splash Screen Logic
+        enterBtn.addEventListener('click', () => {
+            userInteracted = true;
+            splashScreen.classList.add('hidden');
+            playReloadSound();
+
+            // Initialize and start the ambient buzz on first interaction
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (!ambientBuzzSource) {
+                createGaplessLoop(audioCtx, ambientBuzzURL, 0.02).then(buzz => {
+                    if (buzz) {
+                        ambientBuzzSource = buzz.source;
+                        ambientGain = buzz.gainNode;
+                        ambientBuzzSource.start(0);
+                        // Immediately check scroll position to set initial volume
+                        if (window.scrollY >= 10) {
+                            ambientGain.gain.setValueAtTime(0, audioCtx.currentTime);
+                        }
+                    }
+                });
+            }
+        });
+
+        let lastOpacity = 1;
+        let cooldown = false;
+
+        function syncBuzzToFlicker() {
+            if (!userInteracted || !heroLogo) {
+                requestAnimationFrame(syncBuzzToFlicker);
+                return;
+            }
+
+            const opacity = parseFloat(getComputedStyle(heroLogo).opacity);
+
+            // Play sound when opacity drops significantly and user is at the top of the page
+            if (window.scrollY < 10 && opacity < 0.85 && lastOpacity >= 0.85 && !cooldown) {
+                const sound = staccatoBuzzes[Math.floor(Math.random() * staccatoBuzzes.length)];
+                sound.currentTime = 0;
+                sound.play().catch(() => {});
+                cooldown = true;
+                setTimeout(() => cooldown = false, 150); // Cooldown to prevent sound spam
+            }
+
+            lastOpacity = opacity;
+            requestAnimationFrame(syncBuzzToFlicker);
+        }
+
+        requestAnimationFrame(syncBuzzToFlicker);
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX - 20 + 'px';
+            cursor.style.top = e.clientY - 20 + 'px';
+        });
+
+        // Scroll Logic for Ambient Sound (using Web Audio API Gain)
+        window.addEventListener('scroll', () => {
+            if (!userInteracted || !ambientGain) return;
+
+            if (window.scrollY < 10) {
+                ambientGain.gain.setTargetAtTime(0.02, audioCtx.currentTime, 0.1);
+            } else {
+                ambientGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+            }
+        });
+
+        const memberStats = {
+            lily: [
+                { label: "MILD    ", bar: "20%" },
+                { label: "BEARABLE", bar: "50%" },
+                { label: "CRITICAL", bar: "95%" }
+            ],
+            dirk: [
+                { label: "STABLE  ", bar: "15%" },
+                { label: "TWITCHY ", bar: "45%" },
+                { label: "PARANOIA", bar: "90%" }
+            ],
+            greg: [
+                { label: "BALMY      (-5°C)", bar: "80%" },
+                { label: "CHILLY   (-20°C)", bar: "40%" },
+                { label: "BLIZZARD (-45°C)", bar: "10%" }
+            ],
+            singe: [
+                { label: "WARMING    ", bar: "30%" },
+                { label: "SCORCHED  ", bar: "70%" },
+                { label: "DETONATION", bar: "100%" }
+            ]
+        };
+
+        function updateDashboard() {
+            Object.keys(memberStats).forEach(member => {
+                const data = memberStats[member];
+                const randomState = data[Math.floor(Math.random() * data.length)];
+                const card = document.getElementById(`stat-${member}`);
+                if (!card) return;
+                const labelEl = card.querySelector('.label');
+                const barEl = card.querySelector('.bar');
+                labelEl.innerText = randomState.label;
+                barEl.style.width = randomState.bar;
+            });
+        }
+
+        updateDashboard();
+        setInterval(updateDashboard, 5000);
+
+        function playSynthShot() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(120, now);
+            osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.4);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc.start(now); osc.stop(now + 0.4);
+        }
+
+        function playShotgunSound() {
+            if (shotgunAudio.src.includes('GITHUB_USER')) {
+                playSynthShot();
+            } else {
+                shotgunAudio.currentTime = 0;
+                shotgunAudio.play().catch(() => playSynthShot());
+            }
+        }
+
+        function playReloadSound() {
+            if (reloadAudio.src.includes('GITHUB_USER')) {
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else {
+                reloadAudio.currentTime = 0;
+                reloadAudio.play().catch(() => {});
+            }
+        }
+
+        function showFlash(e) {
+            flash.style.display = 'block';
+            flash.style.left = e.clientX - 50 + 'px';
+            flash.style.top = e.clientY - 50 + 'px';
+            flash.style.transform = `rotate(${Math.random() * 360}deg) scale(${0.8 + Math.random() * 0.5})`;
+            setTimeout(() => { flash.style.display = 'none'; }, 50);
+        }
+
+        function createBulletHole(container, x, y) {
+            const hole = document.createElement('div');
+            hole.className = 'bullet-hole';
+            const rect = container.getBoundingClientRect();
+            const relX = x - rect.left;
+            const relY = y - rect.top;
+            hole.style.left = (relX - 20) + 'px';
+            hole.style.top = (relY - 20) + 'px';
+            container.appendChild(hole);
+            bulletHoles.push(hole);
+            if (bulletHoles.length > MAX_HOLES) {
+                const oldest = bulletHoles.shift();
+                oldest.style.opacity = '0';
+                setTimeout(() => oldest.remove(), 1000);
+            }
+        }
+
+        function handleShot(e, targetElement) {
+            if (!userInteracted) return;
+
+            cursor.classList.add('active');
+            setTimeout(() => cursor.classList.remove('active'), 100);
+
+            if (targetElement && targetElement.classList.contains('shootable')) {
+                // Special case for Enter button: it already handles the reload sound and transition
+                if (targetElement.id === 'enter-site') return true;
+
+                clickCount++;
+                if (clickCount % 3 === 0) {
+                    playReloadSound();
+                    return false; 
+                } else {
+                    playShotgunSound();
+                    showFlash(e);
+                    targetElement.classList.remove('impact', 'spin');
+                    void targetElement.offsetWidth; 
+                    targetElement.classList.add('impact', 'spin');
+                    createBulletHole(targetElement, e.clientX, e.clientY);
+                    return true;
+                }
+            }
+            return null;
+        }
+
+        document.addEventListener('mousedown', (e) => {
+            const shootableTarget = e.target.closest('.shootable');
+            handleShot(e, shootableTarget);
+        });
+
+        document.querySelectorAll('a.shootable').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                if (clickCount % 3 === 0) {
+                    e.preventDefault();
+                    return;
+                }
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const target = document.querySelector(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
