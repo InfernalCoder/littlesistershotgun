@@ -615,7 +615,7 @@
 
         shotgunAudio.preload = 'auto';
         reloadAudio.preload = 'auto';
-        staccatoBuzzes.forEach(s => { s.preload = 'auto'; s.volume = 0.2; });
+        staccatoBuzzes.forEach(s => { s.preload = 'auto'; s.volume = 0.02; });
 
         shotgunAudio.volume = 0.3;
         reloadAudio.volume = 0.3;
@@ -657,7 +657,7 @@
             }
 
             if (!ambientBuzzSource) {
-                createGaplessLoop(audioCtx, ambientBuzzURL, 0.02).then(buzz => {
+                createGaplessLoop(audioCtx, ambientBuzzURL, 0.01).then(buzz => {
                     if (buzz) {
                         ambientBuzzSource = buzz.source;
                         ambientGain = buzz.gainNode;
